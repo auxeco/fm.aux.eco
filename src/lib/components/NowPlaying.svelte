@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { currentStation, isPlaying } from '../store';
+	import { broadcastStation, tuningSource } from '../p2p-store';
 	import type { Station } from '../stationlist';
 	import { stations } from '../stationlist';
 	import Overlay from './Overlay.svelte';
@@ -14,7 +15,7 @@
 
 	onMount(() => {
 		const hash = window.location.hash.slice(1);
-		if (hash) {
+		if (hash && !hash.startsWith('follow:')) {
 			const station = stations.find((s) => s.hashtag === hash);
 			if (station) {
 				hashStation = station;
@@ -55,6 +56,7 @@
 				await player.play();
 				isLoading = false;
 				$isPlaying = true;
+				broadcastStation($currentStation);
 			} catch (error) {
 				console.log('Autoplay prevented - waiting for user interaction');
 				$isPlaying = false;
@@ -97,6 +99,10 @@
 		class="col-start-1 col-end-2 row-start-2 flex items-center overflow-hidden border-r border-t border-[var(--border-width)] border-[var(--decorative-base)] px-[var(--space-xl)] text-[0.8rem] text-[var(--text-base)]"
 	>
 		<p class="overflow-hidden text-ellipsis whitespace-nowrap">
+			{#if $tuningSource}
+				<span class="text-[var(--essential-primary)]">via {$tuningSource}</span>
+				&mdash;
+			{/if}
 			{$currentStation ? $currentStation.description : 'Select a station to start playing'}
 		</p>
 		{#if $currentStation && $currentStation.link}
