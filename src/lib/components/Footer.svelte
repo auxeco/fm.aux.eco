@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { currentTheme } from '../store';
+	import { showP2P } from '../p2p-store';
 	import Europe from './Europe.svelte';
 </script>
 
@@ -13,6 +14,13 @@
 		<button class="py-[var(--space-m)]" on:click={() => ($currentTheme = 'light-theme')}
 			>Light</button
 		>
+		<span class="px-[var(--space-m)]">|</span>
+		<button
+			class="py-[var(--space-m)] {$showP2P ? 'text-[var(--essential-primary)]' : ''}"
+			on:click={() => ($showP2P = !$showP2P)}
+		>
+			P2P
+		</button>
 		<div class="ml-auto">
 			<Europe />
 		</div>

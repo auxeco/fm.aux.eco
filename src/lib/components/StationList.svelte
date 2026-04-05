@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { currentStation } from '$lib/store';
+	import { tuningSource } from '$lib/p2p-store';
 	import type { Station } from '$lib/stationlist';
 	import { stations } from '$lib/stationlist';
 	import Overlay from './Overlay.svelte';
@@ -19,15 +20,20 @@
 		const isPrev = key === 'ArrowLeft' || key === 'ArrowUp';
 
 		if (isNext) {
+			tuningSource.set(null);
 			const nextIndex = (stationIndex + 1) % stations.length;
 			currentStation.set(stations[nextIndex]);
 		} else if (isPrev) {
+			tuningSource.set(null);
 			const prevIndex = stationIndex - 1 < 0 ? stations.length - 1 : stationIndex - 1;
 			currentStation.set(stations[prevIndex]);
 		}
 	};
 
-	const setStation = (station: Station) => currentStation.set(station);
+	const setStation = (station: Station) => {
+		tuningSource.set(null);
+		currentStation.set(station);
+	};
 
 	const copyHashtag = (hashtag: string) => {
 		navigator.clipboard.writeText(`${window.location.origin}/#${hashtag}`);
