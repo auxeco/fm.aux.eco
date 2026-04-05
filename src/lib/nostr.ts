@@ -37,7 +37,9 @@ function getPool(): SimplePool {
 	return pool;
 }
 
-export function getOrCreateKeypair(): { secretKey: Uint8Array; publicKey: string } {
+function getOrCreateSecretKey(): Uint8Array {
+	if (secretKey) return secretKey;
+
 	const stored = localStorage.getItem(SK_KEY);
 	if (stored) {
 		secretKey = hexToBytes(stored);
@@ -45,12 +47,11 @@ export function getOrCreateKeypair(): { secretKey: Uint8Array; publicKey: string
 		secretKey = generateSecretKey();
 		localStorage.setItem(SK_KEY, bytesToHex(secretKey));
 	}
-	const publicKey = getPublicKey(secretKey);
-	return { secretKey, publicKey };
+	return secretKey;
 }
 
 export function getPublicKeyHex(): string {
-	return getOrCreateKeypair().publicKey;
+	return getPublicKey(getOrCreateSecretKey());
 }
 
 export function getNpub(): string {
@@ -72,8 +73,7 @@ export function getShareLink(): string {
 }
 
 export async function publishNowPlaying(stationId: string, stationName: string): Promise<void> {
-	const { secretKey: sk } = getOrCreateKeypair();
-	if (!sk) return;
+	const sk = getOrCreateSecretKey();
 
 	const event = finalizeEvent(
 		{
