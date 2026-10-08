@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../controller/radio_controller.dart';
 import '../models/station.dart';
 import '../speakers/remote_speaker.dart';
+import 'dot_logo.dart';
 import 'speaker_sheet.dart';
 import 'theme.dart';
 
@@ -54,7 +55,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
+            _Header(controller: c),
             _NowPlaying(controller: c),
             _OutputBar(controller: c),
             Expanded(
@@ -72,13 +73,14 @@ BorderSide _border(BuildContext context) =>
     BorderSide(color: AuxColors.of(context).decorative);
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.controller});
+  final RadioController controller;
 
   @override
   Widget build(BuildContext context) {
     final colors = AuxColors.of(context);
     return SizedBox(
-      height: 64,
+      height: 96,
       child: Row(
         children: [
           Expanded(
@@ -88,9 +90,9 @@ class _Header extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(right: _border(context)),
               ),
-              child: CustomPaint(
-                size: const Size.square(32),
-                painter: _LogoPainter(colors.text),
+              child: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) => DotLogo(playing: controller.isPlaying),
               ),
             ),
           ),
@@ -119,9 +121,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// The AUX sunburst: twelve four-pointed sparkles around a centre.
-class _LogoPainter extends CustomPainter {
-  _LogoPainter(this.color);
+/// The EU emblem from the web footer (`Europe.svelte`): twelve
+/// four-pointed stars in a circle.
+class _EuropePainter extends CustomPainter {
+  _EuropePainter(this.color);
   final Color color;
 
   @override
@@ -132,14 +135,16 @@ class _LogoPainter extends CustomPainter {
     for (var i = 0; i < 12; i++) {
       canvas.save();
       canvas.rotate(i * math.pi / 6);
-      canvas.translate(0, -r * 0.62);
-      final s = r * 0.36;
+      // Proportions of the web SVG: stars ~27% of the radius across, on a
+      // ring at 85% of the radius, so they stay separate.
+      canvas.translate(0, -r * 0.85);
+      final s = r * 0.15;
       final path = Path()
         ..moveTo(0, -s)
-        ..quadraticBezierTo(s * 0.12, -s * 0.12, s * 0.7, 0)
-        ..quadraticBezierTo(s * 0.12, s * 0.12, 0, s)
-        ..quadraticBezierTo(-s * 0.12, s * 0.12, -s * 0.7, 0)
-        ..quadraticBezierTo(-s * 0.12, -s * 0.12, 0, -s)
+        ..quadraticBezierTo(s * 0.15, -s * 0.15, s * 0.95, 0)
+        ..quadraticBezierTo(s * 0.15, s * 0.15, 0, s)
+        ..quadraticBezierTo(-s * 0.15, s * 0.15, -s * 0.95, 0)
+        ..quadraticBezierTo(-s * 0.15, -s * 0.15, 0, -s)
         ..close();
       canvas.drawPath(path, paint);
       canvas.restore();
@@ -147,7 +152,7 @@ class _LogoPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LogoPainter old) => old.color != color;
+  bool shouldRepaint(_EuropePainter old) => old.color != color;
 }
 
 class _NowPlaying extends StatelessWidget {
@@ -482,6 +487,15 @@ class _Footer extends StatelessWidget {
           TextButton(
             onPressed: () => controller.toggleTheme(false),
             child: Text('Light', style: style),
+          ),
+          const Spacer(),
+          Semantics(
+            label: 'European Union',
+            image: true,
+            child: CustomPaint(
+              size: const Size.square(32),
+              painter: _EuropePainter(colors.text),
+            ),
           ),
           const Spacer(),
           TextButton(

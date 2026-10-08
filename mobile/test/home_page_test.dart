@@ -102,7 +102,7 @@ void main() {
     await screenshot(tester, 'amp');
 
     await tester.tap(find.text('UP2STREAM AMP'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('This phone'), findsOneWidget);
     expect(find.text('Up2Stream Amp'), findsOneWidget);
     expect(find.text('Kitchen speaker'), findsOneWidget);
@@ -111,7 +111,7 @@ void main() {
     await screenshot(tester, 'speakers');
 
     await tester.tap(find.text('This phone'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('PHONE'), findsOneWidget);
     expect(player.played, ['kexp', 'kexp']);
     c.dispose();
