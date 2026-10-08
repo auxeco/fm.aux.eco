@@ -12,6 +12,12 @@ npm install
 npm run dev
 ```
 
+## Mobile app
+
+A native Android & iOS app (Flutter) lives in [`mobile/`](mobile/). It can
+also play stations on, and control, an Arylic streaming amp on your network.
+See [mobile/README.md](mobile/README.md).
+
 ## Artefact not Product
 
 This is an Artefact, not a product. This is not for profit or to collect any data. There is and there won't be any tracking, cookies, analytics or ads introduced on the main branch.
