@@ -1,7 +1,9 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:car_connection/car_connection.dart';
 import 'package:flutter/material.dart';
 
 import 'audio/radio_audio_handler.dart';
+import 'cast/cast_discovery.dart';
 import 'controller/radio_controller.dart';
 import 'controller/settings.dart';
 import 'ui/home_page.dart';
@@ -21,6 +23,8 @@ Future<void> main() async {
   final controller = RadioController(
     player: player,
     settings: await Settings.load(),
+    castDiscovery: BonsoirCastDiscovery(),
+    isInCar: CarConnection.isConnected,
   );
   runApp(AuxFmApp(controller: controller));
   await controller.init();

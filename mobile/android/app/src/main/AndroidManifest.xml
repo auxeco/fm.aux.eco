@@ -38,7 +38,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Background playback, media notification and headset buttons. -->
+        <!-- Android Auto: lists the stations from the media browser service. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <!-- Background playback, media notification, headset buttons, and the
+             media browser used by Android Auto and voice assistants. -->
         <service
             android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"

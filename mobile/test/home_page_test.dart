@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:aux_fm/arylic/arylic_client.dart';
+import 'package:aux_fm/cast/cast_discovery.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
 import 'package:aux_fm/main.dart';
@@ -11,7 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'radio_controller_test.dart' show FakeAmp, FakePlayer;
+import 'fakes/fakes.dart';
 
 Future<void> loadFonts() async {
   final loader = FontLoader('IBMPlexMono')
@@ -50,7 +51,7 @@ Future<void> screenshot(WidgetTester tester, String name) async {
 }
 
 void main() {
-  testWidgets('home screen renders and controls the amp', (tester) async {
+  testWidgets('home screen, speaker picker and amp control', (tester) async {
     await loadFonts();
     tester.view
       ..physicalSize = const Size(1080, 2340)
@@ -60,10 +61,12 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final amp = FakeAmp();
     final player = FakePlayer();
+    final discovery = FakeCastDiscovery();
     final c = RadioController(
       player: player,
       settings: await Settings.load(),
       ampFactory: (h) => ArylicClient(h, httpGet: amp.get),
+      castDiscovery: discovery,
       pollInterval: const Duration(hours: 1),
     );
     await tester.pumpWidget(
@@ -72,9 +75,20 @@ void main() {
         child: AuxFmApp(controller: c),
       ),
     );
+    await tester.runAsync(c.init);
+    discovery.announce(const [
+      CastDevice(
+        id: 'a',
+        name: 'Kitchen speaker',
+        host: '10.0.0.5',
+        model: 'Google Nest Mini',
+      ),
+      CastDevice(id: 'b', name: 'Living Room TV', host: '10.0.0.6'),
+    ]);
+    await tester.pump();
 
     expect(find.text('NTS 1'), findsWidgets);
-    expect(find.text('+ CONNECT AMP'), findsOneWidget);
+    expect(find.text('PHONE'), findsOneWidget);
 
     await tester.tap(find.text('KEXP'));
     await tester.pump();
@@ -87,10 +101,19 @@ void main() {
     expect(find.byType(Slider), findsOneWidget);
     await screenshot(tester, 'amp');
 
-    await tester.tap(find.byTooltip('Amp settings'));
+    await tester.tap(find.text('UP2STREAM AMP'));
     await tester.pumpAndSettle();
-    expect(find.text('ARYLIC AMP'), findsOneWidget);
-    await screenshot(tester, 'amp_sheet');
+    expect(find.text('This phone'), findsOneWidget);
+    expect(find.text('Up2Stream Amp'), findsOneWidget);
+    expect(find.text('Kitchen speaker'), findsOneWidget);
+    expect(find.text('Google Cast · Google Nest Mini'), findsOneWidget);
+    expect(find.text('ARYLIC AMP SETTINGS'), findsOneWidget);
+    await screenshot(tester, 'speakers');
+
+    await tester.tap(find.text('This phone'));
+    await tester.pumpAndSettle();
+    expect(find.text('PHONE'), findsOneWidget);
+    expect(player.played, ['kexp', 'kexp']);
     c.dispose();
   });
 }

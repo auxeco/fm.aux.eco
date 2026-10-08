@@ -7,7 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../controller/radio_controller.dart';
 import '../models/station.dart';
-import 'amp_sheet.dart';
+import '../speakers/remote_speaker.dart';
+import 'speaker_sheet.dart';
 import 'theme.dart';
 
 class HomePage extends StatefulWidget {
@@ -324,7 +325,7 @@ class _TrianglePainter extends CustomPainter {
   bool shouldRepaint(_TrianglePainter old) => old.color != color;
 }
 
-/// Chooses where the radio plays: this phone or the Arylic amp.
+/// Shows where the radio plays; tap to pick a speaker.
 class _OutputBar extends StatelessWidget {
   const _OutputBar({required this.controller});
   final RadioController controller;
@@ -335,73 +336,63 @@ class _OutputBar extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        Widget option(String label, bool selected, VoidCallback onTap) =>
-            InkWell(
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: selected ? colors.primary : colors.text,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
-
-        final ampLabel = controller.hasAmp
-            ? '${controller.ampReachable ? '' : '⚠ '}${(controller.ampName ?? 'AMP').toUpperCase()}'
-            : '+ CONNECT AMP';
-
+        final remote = controller.isRemote;
+        final icon = switch (controller.target?.kind) {
+          null => Icons.smartphone,
+          SpeakerKind.arylic => Icons.speaker,
+          SpeakerKind.cast => Icons.cast_connected,
+        };
         return Container(
           decoration: BoxDecoration(border: Border(bottom: _border(context))),
           child: Column(
             children: [
-              Row(
-                children: [
-                  const SizedBox(width: 8),
-                  Text(
-                    'PLAY ON',
-                    style: TextStyle(fontSize: 11, color: colors.decorative),
-                  ),
-                  option(
-                    'PHONE',
-                    !controller.playsOnAmp,
-                    () => controller.setOutput(Output.phone),
-                  ),
-                  Text('|', style: TextStyle(color: colors.decorative)),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: option(ampLabel, controller.playsOnAmp, () {
-                        if (controller.hasAmp) {
-                          controller.setOutput(Output.amp);
-                        } else {
-                          showAmpSheet(context, controller);
-                        }
-                      }),
+              Semantics(
+                button: true,
+                label: 'Playing on ${controller.targetName}. Choose speaker',
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => showSpeakerSheet(context, controller),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
+                    child: Row(
+                      children: [
+                        Text(
+                          'PLAY ON',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.decorative,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          icon,
+                          size: 18,
+                          color: remote ? colors.primary : colors.text,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${remote && !controller.remoteReachable ? '⚠ ' : ''}'
+                            '${controller.targetName.toUpperCase()}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: remote ? colors.primary : colors.text,
+                              fontWeight: remote
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.expand_more, color: colors.text, size: 20),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Amp settings',
-                    icon: Icon(
-                      Icons.speaker_group_outlined,
-                      color: colors.text,
-                      size: 20,
-                    ),
-                    onPressed: () => showAmpSheet(context, controller),
-                  ),
-                ],
+                ),
               ),
-              if (controller.playsOnAmp && controller.ampStatus != null)
-                AmpVolumeSlider(controller: controller),
+              if (remote && controller.remoteStatus != null)
+                RemoteVolumeSlider(controller: controller),
             ],
           ),
         );

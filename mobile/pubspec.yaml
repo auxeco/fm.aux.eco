@@ -38,6 +38,9 @@ dependencies:
   audio_service: ^0.18.19
   shared_preferences: ^2.5.6
   url_launcher: ^6.3.3
+  bonsoir: ^7.1.5
+  car_connection:
+    path: packages/car_connection
 
 dev_dependencies:
   flutter_test:

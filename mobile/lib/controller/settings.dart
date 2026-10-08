@@ -1,5 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../cast/cast_discovery.dart';
+
+/// Where playback goes.
+enum OutputKind { phone, amp, cast }
+
 /// Persisted user choices.
 class Settings {
   Settings(this._prefs);
@@ -18,8 +23,32 @@ class Settings {
   String? get ampName => _prefs.getString('ampName');
   set ampName(String? v) => _set('ampName', v);
 
-  bool get outputToAmp => _prefs.getBool('outputToAmp') ?? false;
-  set outputToAmp(bool v) => _prefs.setBool('outputToAmp', v);
+  OutputKind get output => OutputKind.values.firstWhere(
+    (k) => k.name == _prefs.getString('output'),
+    orElse: () => OutputKind.phone,
+  );
+  set output(OutputKind v) => _prefs.setString('output', v.name);
+
+  /// The last Cast speaker played on, so it can be used again before
+  /// discovery finds it.
+  CastDevice? get castDevice {
+    final id = _prefs.getString('castId');
+    final host = _prefs.getString('castHost');
+    if (id == null || host == null) return null;
+    return CastDevice(
+      id: id,
+      name: _prefs.getString('castName') ?? 'Speaker',
+      host: host,
+      port: _prefs.getInt('castPort') ?? 8009,
+    );
+  }
+
+  set castDevice(CastDevice? d) {
+    _set('castId', d?.id);
+    _set('castName', d?.name);
+    _set('castHost', d?.host);
+    d == null ? _prefs.remove('castPort') : _prefs.setInt('castPort', d.port);
+  }
 
   bool get darkTheme => _prefs.getBool('darkTheme') ?? true;
   set darkTheme(bool v) => _prefs.setBool('darkTheme', v);

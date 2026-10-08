@@ -15,7 +15,8 @@ npm run dev
 ## Mobile app
 
 A native Android & iOS app (Flutter) lives in [`mobile/`](mobile/). It can
-also play stations on, and control, an Arylic streaming amp on your network.
+also play stations on, and control, an Arylic streaming amp or Google Nest /
+Chromecast speakers on your network, and works with voice and Android Auto.
 See [mobile/README.md](mobile/README.md).
 
 ## Artefact not Product
