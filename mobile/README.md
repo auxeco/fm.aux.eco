@@ -16,6 +16,27 @@ controls, "Hey Google, play NTS on AUX FM", and Android Auto.
 
 <img src="docs/amp.png" width="260" alt="Home screen playing on the amp" /> <img src="docs/speakers.png" width="260" alt="Speaker picker" />
 
+## Install on Android
+
+**[Download the latest build](https://github.com/auxeco/fm.aux.eco/actions/workflows/mobile.yml?query=is%3Asuccess)**: open the newest run at the top
+and tap **aux-fm-android** under *Artifacts* (you need to be signed in to
+GitHub). Every commit that changes the app also gets a comment with a direct
+link to its APK.
+
+1. On the phone, open the link above in the browser (not the GitHub app;
+   switch to "Desktop site" if *Artifacts* doesn't show) and download
+   `aux-fm-android.zip`.
+2. In the **Files** app, open the zip and **Extract** it.
+3. Tap `app-release.apk`, allow installs from this source when asked, then
+   **Install**. If Play Protect warns about an unrecognized app, choose
+   **More details → Install anyway**.
+
+Alternatively, unzip it on a computer and install it over USB with
+`adb install app-release.apk` (USB debugging enabled on the phone).
+
+Builds are currently signed with a throwaway key per build, so uninstall the
+old version before installing a newer one.
+
 ## Stack
 
 | Concern | Choice |

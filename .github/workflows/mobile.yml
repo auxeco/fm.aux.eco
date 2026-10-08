@@ -7,6 +7,9 @@ on:
     paths: ['mobile/**', '.github/workflows/mobile.yml']
   workflow_dispatch:
 
+permissions:
+  contents: write # post the APK link as a commit comment
+
 defaults:
   run:
     working-directory: mobile
@@ -31,6 +34,20 @@ jobs:
       - run: flutter test
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
+        id: upload
         with:
           name: aux-fm-android
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
+      - name: Link the APK on the commit
+        if: github.event_name == 'push'
+        # A convenience; never fail the build over it.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_URL: ${{ steps.upload.outputs.artifact-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="📱 **Android APK for this commit:** [download aux-fm-android.zip]($APK_URL)
+
+          Unzip it and open \`app-release.apk\` on your phone. Install steps: [mobile/README.md](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/mobile/README.md#install-on-android) · [build log]($RUN_URL)"
