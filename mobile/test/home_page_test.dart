@@ -50,6 +50,14 @@ Future<void> screenshot(WidgetTester tester, String name) async {
   });
 }
 
+/// Lets the bottom sheet slide in or out. Not pumpAndSettle: the logo
+/// animates for as long as something plays, so it never settles. The first
+/// pump starts the sheet's animation, the second runs it to the end.
+Future<void> settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 600));
+}
+
 void main() {
   testWidgets('home screen, speaker picker and amp control', (tester) async {
     await loadFonts();
@@ -102,7 +110,7 @@ void main() {
     await screenshot(tester, 'amp');
 
     await tester.tap(find.text('UP2STREAM AMP'));
-    await tester.pump(const Duration(milliseconds: 600));
+    await settle(tester);
     expect(find.text('This phone'), findsOneWidget);
     expect(find.text('Up2Stream Amp'), findsOneWidget);
     expect(find.text('Kitchen speaker'), findsOneWidget);
@@ -111,7 +119,7 @@ void main() {
     await screenshot(tester, 'speakers');
 
     await tester.tap(find.text('This phone'));
-    await tester.pump(const Duration(milliseconds: 600));
+    await settle(tester);
     expect(find.text('PHONE'), findsOneWidget);
     expect(player.played, ['kexp', 'kexp']);
     c.dispose();
