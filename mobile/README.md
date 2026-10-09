@@ -62,7 +62,8 @@ key: uninstall the old version first, which also clears those settings.
 ```
 lib/
   main.dart                    app entry, starts the audio service
-  data/stations.dart           station list (keep in sync with src/lib/stationlist.ts)
+  data/stations.dart           AUX FM selection (keep in sync with src/lib/stationlist.ts)
+  data/more_stations.dart      extra stations users can add in Settings
   audio/radio_audio_handler.dart  phone playback + media session
   arylic/arylic_client.dart    Arylic HTTP API client
   arylic/arylic_discovery.dart find amps on the LAN
@@ -71,9 +72,37 @@ lib/
   voice/station_search.dart    matches "NTS two", "dub lab", ... to stations
   controller/radio_controller.dart  app state; routes playback to a speaker
   ui/                          screens
+tool/check_stations.dart       checks every station's stream (run by CI)
 packages/car_connection/       tiny Android plugin: is Android Auto connected?
 test/                          unit + widget tests (fake amp, fake Cast
                                device speaking the real protocol, fake player)
+```
+
+## Stations
+
+**Settings** (bottom right) decides which stations are in the list:
+
+- **AUX FM selection:** the stations from fm.aux.eco, on by default.
+- **More stations:** independent and community stations (Cashmere Radio,
+  Kiosk Radio, LYL, Noods, Radio Raheem, Rinse France, ...) and curated
+  music radio (FIP and its channels, FM4, WFMU, KCRW Eclectic24, ...), off
+  until ticked.
+- **NTS Infinite Mixtapes:** NTS's 16 themed 24/7 streams.
+- **Your stations:** add any station by name and stream URL. The app
+  fetches the start of the stream first: playlist files (.pls / .m3u) are
+  explained, anything else that doesn't look like audio is added with a
+  warning.
+
+The **Station streams** workflow (`.github/workflows/stations.yml`) runs
+`tool/check_stations.dart` every Monday and whenever a station list
+changes. It fetches the start of every stream and checks the bytes really
+are audio, so a station whose stream moved shows up as a failed check
+rather than as silence in the app. To find a station's current stream:
+
+```bash
+cd mobile
+echo "? Station name" > /tmp/c.txt   # looks it up on radio-browser.info
+dart run tool/check_stations.dart --candidates /tmp/c.txt
 ```
 
 ## Speakers
