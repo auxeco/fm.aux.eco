@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../controller/radio_controller.dart';
 import '../models/station.dart';
 import '../speakers/remote_speaker.dart';
+import '../version.dart';
 import 'dot_logo.dart';
 import 'speaker_sheet.dart';
 import 'theme.dart';
@@ -418,8 +419,17 @@ class _StationList extends StatelessWidget {
       listenable: controller,
       builder: (context, _) => ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        itemCount: controller.stations.length,
+        itemCount: controller.stations.length + 1,
         itemBuilder: (context, i) {
+          if (i == controller.stations.length) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(10, 24, 10, 6),
+              child: Text(
+                'AUX FM $appVersion',
+                style: TextStyle(fontSize: 11, color: colors.decorative),
+              ),
+            );
+          }
           final Station station = controller.stations[i];
           final selected = station.id == controller.current.id;
           return InkWell(

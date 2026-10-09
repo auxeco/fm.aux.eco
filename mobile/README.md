@@ -34,6 +34,9 @@ link to its APK.
 Alternatively, unzip it on a computer and install it over USB with
 `adb install app-release.apk` (USB debugging enabled on the phone).
 
+Each build is numbered `1.0.<build>`. The number is in the commit comment,
+at the bottom of the station list, and under Settings → Apps → AUX FM.
+
 Builds are currently signed with a throwaway key per build, so uninstall the
 old version before installing a newer one.
 

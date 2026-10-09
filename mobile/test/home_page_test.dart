@@ -122,6 +122,10 @@ void main() {
     await settle(tester);
     expect(find.text('PHONE'), findsOneWidget);
     expect(player.played, ['kexp', 'kexp']);
+
+    // The version is at the end of the station list.
+    await tester.scrollUntilVisible(find.text('AUX FM dev'), 200);
+    expect(find.text('AUX FM dev'), findsOneWidget);
     c.dispose();
   });
 }
