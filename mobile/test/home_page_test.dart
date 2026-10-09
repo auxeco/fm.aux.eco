@@ -1,62 +1,14 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:aux_fm/arylic/arylic_client.dart';
 import 'package:aux_fm/cast/cast_discovery.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
 import 'package:aux_fm/main.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes/fakes.dart';
-
-Future<void> loadFonts() async {
-  final loader = FontLoader('IBMPlexMono')
-    ..addFont(rootBundle.load('assets/fonts/IBMPlexMono-Regular.ttf'))
-    ..addFont(rootBundle.load('assets/fonts/IBMPlexMono-Bold.ttf'));
-  await loader.load();
-  // Material icons are not bundled in widget tests; load them from the SDK
-  // so screenshots show real icons.
-  final sdk = Platform.environment['FLUTTER_ROOT'];
-  final icons = File(
-    '$sdk/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
-  );
-  if (sdk != null && icons.existsSync()) {
-    final bytes = icons.readAsBytesSync();
-    await (FontLoader(
-      'MaterialIcons',
-    )..addFont(Future.value(ByteData.sublistView(bytes)))).load();
-  }
-}
-
-/// Set SCREENSHOT_DIR to write PNGs of the rendered screens.
-Future<void> screenshot(WidgetTester tester, String name) async {
-  final dir = Platform.environment['SCREENSHOT_DIR'];
-  if (dir == null) return;
-  await tester.pump(const Duration(milliseconds: 300));
-  await tester.runAsync(() async {
-    final boundary = tester.renderObject<RenderRepaintBoundary>(
-      find.byKey(const ValueKey('screen')),
-    );
-    final image = await boundary.toImage(
-      pixelRatio: tester.view.devicePixelRatio,
-    );
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    File('$dir/$name.png').writeAsBytesSync(bytes!.buffer.asUint8List());
-  });
-}
-
-/// Lets the bottom sheet slide in or out. Not pumpAndSettle: the logo
-/// animates for as long as something plays, so it never settles. The first
-/// pump starts the sheet's animation, the second runs it to the end.
-Future<void> settle(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 600));
-}
+import 'fakes/ui_helpers.dart';
 
 void main() {
   testWidgets('home screen, speaker picker and amp control', (tester) async {

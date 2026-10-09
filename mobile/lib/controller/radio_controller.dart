@@ -7,11 +7,13 @@ import '../arylic/arylic_discovery.dart';
 import '../audio/local_player.dart';
 import '../cast/cast_client.dart';
 import '../cast/cast_discovery.dart';
+import '../data/more_stations.dart' as data;
 import '../data/stations.dart' as data;
 import '../models/station.dart';
 import '../speakers/remote_speaker.dart';
 import '../voice/station_search.dart';
 import 'settings.dart';
+import 'station_library.dart';
 
 typedef AmpFactory = ArylicClient Function(String host);
 typedef CastSpeakerFactory = RemoteSpeaker Function(CastDevice device);
@@ -30,18 +32,20 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     CarCheck? isInCar,
     AmpLocator? locateAmps,
     List<Station> stations = data.stations,
+    List<Station> moreStations = data.moreStations,
     this.pollInterval = const Duration(seconds: 3),
   }) : _settings = settings,
        _ampFactory = ampFactory ?? ArylicClient.new,
        _castFactory = castFactory ?? CastSpeaker.new,
        _isInCar = isInCar ?? _never,
        _locateAmps = locateAmps ?? ArylicDiscovery().discover,
-       stations = List.unmodifiable(stations),
-       _current = stations.firstWhere(
-         (s) => s.id == settings.stationId,
-         orElse: () => stations.first,
+       library = StationLibrary(
+         settings,
+         selection: stations,
+         more: moreStations,
        ),
        _darkTheme = settings.darkTheme {
+    _current = library.byId(settings.stationId) ?? library.enabled.first;
     _player.delegate = this;
     _subs.add(
       _player.playback.listen((p) {
@@ -67,12 +71,17 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   final CarCheck _isInCar;
   final AmpLocator _locateAmps;
   final Duration pollInterval;
+
+  /// Every station the app knows; see [stations] for the user's list.
+  final StationLibrary library;
+
+  /// The user's station list.
   @override
-  final List<Station> stations;
+  List<Station> get stations => library.enabled;
   final _subs = <StreamSubscription<Object?>>[];
   final _errors = StreamController<String>.broadcast();
 
-  Station _current;
+  late Station _current;
   bool _darkTheme;
   LocalPlayback _local = LocalPlayback.idle;
   String? _streamTitle;
@@ -185,6 +194,36 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     final i = stations.indexWhere((s) => s.id == _current.id);
     final n = stations.length;
     return selectStation(stations[(i + delta + n) % n]);
+  }
+
+  // ---- Station list ----
+
+  /// Adds [station] to or removes it from the list. Returns false for the
+  /// last station in the list, which stays.
+  bool setStationEnabled(Station station, bool enabled) {
+    final ok = library.setEnabled(station, enabled);
+    notifyListeners();
+    return ok;
+  }
+
+  /// Adds a station the user entered to the end of the list.
+  Station addStation({required String name, required String url}) {
+    final station = library.addCustom(name: name, url: url);
+    notifyListeners();
+    return station;
+  }
+
+  /// Deletes a station the user entered. Returns false for the last
+  /// station in the list.
+  Future<bool> removeStation(Station station) async {
+    if (!library.removeCustom(station)) return false;
+    if (station.id == _current.id) {
+      if (isPlaying) await stop();
+      _current = stations.first;
+      _settings.stationId = _current.id;
+    }
+    notifyListeners();
+    return true;
   }
 
   // ---- Speakers ----

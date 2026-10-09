@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import '../models/station.dart';
 import '../speakers/remote_speaker.dart';
 import '../version.dart';
 import 'dot_logo.dart';
+import 'settings_page.dart';
 import 'speaker_sheet.dart';
 import 'theme.dart';
 
@@ -122,40 +122,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// The EU emblem from the web footer (`Europe.svelte`): twelve
-/// four-pointed stars in a circle.
-class _EuropePainter extends CustomPainter {
-  _EuropePainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final r = size.shortestSide / 2;
-    canvas.translate(size.width / 2, size.height / 2);
-    for (var i = 0; i < 12; i++) {
-      canvas.save();
-      canvas.rotate(i * math.pi / 6);
-      // Proportions of the web SVG: stars ~27% of the radius across, on a
-      // ring at 85% of the radius, so they stay separate.
-      canvas.translate(0, -r * 0.85);
-      final s = r * 0.15;
-      final path = Path()
-        ..moveTo(0, -s)
-        ..quadraticBezierTo(s * 0.15, -s * 0.15, s * 0.95, 0)
-        ..quadraticBezierTo(s * 0.15, s * 0.15, 0, s)
-        ..quadraticBezierTo(-s * 0.15, s * 0.15, -s * 0.95, 0)
-        ..quadraticBezierTo(-s * 0.15, -s * 0.15, 0, -s)
-        ..close();
-      canvas.drawPath(path, paint);
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(_EuropePainter old) => old.color != color;
-}
-
 class _NowPlaying extends StatelessWidget {
   const _NowPlaying({required this.controller});
   final RadioController controller;
@@ -232,7 +198,7 @@ class _NowPlaying extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                nowPlaying ?? station.description,
+                                nowPlaying ?? station.subtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -499,21 +465,13 @@ class _Footer extends StatelessWidget {
             child: Text('Light', style: style),
           ),
           const Spacer(),
-          Semantics(
-            label: 'European Union',
-            image: true,
-            child: CustomPaint(
-              size: const Size.square(32),
-              painter: _EuropePainter(colors.text),
-            ),
-          ),
-          const Spacer(),
           TextButton(
-            onPressed: () => launchUrl(
-              Uri.parse('https://github.com/auxeco/fm.aux.eco'),
-              mode: LaunchMode.externalApplication,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SettingsPage(controller: controller),
+              ),
             ),
-            child: Text('Contribute', style: style),
+            child: Text('Settings', style: style),
           ),
         ],
       ),

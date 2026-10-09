@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cast/cast_discovery.dart';
+import '../models/station.dart';
 
 /// Where playback goes.
 enum OutputKind { phone, amp, cast }
@@ -53,6 +56,35 @@ class Settings {
     _set('castHost', d?.host);
     d == null ? _prefs.remove('castPort') : _prefs.setInt('castPort', d.port);
   }
+
+  /// Built-in or custom stations the user removed from their list.
+  Set<String> get hiddenStations =>
+      (_prefs.getStringList('hiddenStations') ?? const []).toSet();
+  set hiddenStations(Set<String> v) =>
+      _prefs.setStringList('hiddenStations', v.toList());
+
+  /// Stations from the extra catalog the user added to their list.
+  Set<String> get addedStations =>
+      (_prefs.getStringList('addedStations') ?? const []).toSet();
+  set addedStations(Set<String> v) =>
+      _prefs.setStringList('addedStations', v.toList());
+
+  /// Stations the user entered themselves.
+  List<Station> get customStations {
+    final raw = _prefs.getString('customStations');
+    if (raw == null) return const [];
+    try {
+      return [
+        for (final s in jsonDecode(raw) as List)
+          Station.fromJson(s as Map<String, dynamic>),
+      ];
+    } on Object {
+      return const [];
+    }
+  }
+
+  set customStations(List<Station> v) =>
+      _prefs.setString('customStations', jsonEncode(v));
 
   bool get darkTheme => _prefs.getBool('darkTheme') ?? true;
   set darkTheme(bool v) => _prefs.setBool('darkTheme', v);

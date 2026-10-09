@@ -338,6 +338,41 @@ void main() {
     });
   });
 
+  group('station list', () {
+    test('a station the user adds is in the list after a restart', () async {
+      final c = await make();
+      final mine = c.addStation(name: 'Radio Mine', url: 'https://mine/s');
+      expect(c.stations.last.id, mine.id);
+      await c.selectStation(mine);
+      expect(player.played.last, mine.id);
+
+      final again = build(Settings(await SharedPreferences.getInstance()));
+      expect(again.stations.last.name, 'Radio Mine');
+      expect(again.current.id, mine.id);
+    });
+
+    test('next / previous only go through the user\'s list', () async {
+      final c = await make();
+      for (final s in stations.skip(2)) {
+        c.setStationEnabled(s, false);
+      }
+      expect(c.stations.map((s) => s.id), [stations[0].id, stations[1].id]);
+      await c.next();
+      await c.next();
+      expect(c.current.id, stations[0].id);
+    });
+
+    test('deleting the playing station stops it', () async {
+      final c = await make();
+      final mine = c.addStation(name: 'Radio Mine', url: 'https://mine/s');
+      await c.selectStation(mine);
+      expect(await c.removeStation(mine), isTrue);
+      expect(player.stops, 1);
+      expect(c.current.id, stations.first.id);
+      expect(c.stations.any((s) => s.id == mine.id), isFalse);
+    });
+  });
+
   group('voice and Android Auto', () {
     test('"play KEXP on AUX FM" plays on the selected speaker', () async {
       final c = await make();
