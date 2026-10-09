@@ -26,7 +26,8 @@ class ArylicDeviceInfo {
       name: name,
       firmware: json['firmware']?.toString(),
       project: json['project']?.toString(),
-      uuid: json['uuid']?.toString(),
+      // Stable device identity; MAC as a fallback on firmware without uuid.
+      uuid: (json['uuid'] ?? json['MAC'])?.toString(),
     );
   }
 

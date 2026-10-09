@@ -23,6 +23,10 @@ class Settings {
   String? get ampName => _prefs.getString('ampName');
   set ampName(String? v) => _set('ampName', v);
 
+  /// Identifies the amp if its IP address changes.
+  String? get ampUuid => _prefs.getString('ampUuid');
+  set ampUuid(String? v) => _set('ampUuid', v);
+
   OutputKind get output => OutputKind.values.firstWhere(
     (k) => k.name == _prefs.getString('output'),
     orElse: () => OutputKind.phone,

@@ -37,8 +37,10 @@ Alternatively, unzip it on a computer and install it over USB with
 Each build is numbered `1.0.<build>`. The number is in the commit comment,
 at the bottom of the station list, and under Settings → Apps → AUX FM.
 
-Builds are currently signed with a throwaway key per build, so uninstall the
-old version before installing a newer one.
+Once the repository has a [signing key](#signing-key), each new build
+installs over the previous one and keeps your settings (selected speaker,
+remembered amp, last station). Builds without it are signed with a throwaway
+key: uninstall the old version first, which also clears those settings.
 
 ## Stack
 
@@ -139,15 +141,37 @@ run's artifacts to sideload it.
 
 ### Before publishing
 
-- **Play Store:** release builds are currently signed with the debug key.
-  Create an upload keystore and configure `signingConfigs` in
-  `android/app/build.gradle.kts`.
+- **Play Store:** use the [signing key](#signing-key) below as the upload
+  key.
 - **iOS:** set your team and bundle ID in Xcode (`ios/Runner.xcworkspace`).
   Network search for the amp needs Apple's multicast entitlement
   (`com.apple.developer.networking.multicast`, requested from Apple). Until
   then, connect by IP address on iOS. Google Cast discovery uses Bonjour and
   works without it. Car detection is Android-only so far (CarPlay would need
   its own work).
+
+## Signing key
+
+CI signs every APK with the same key when two repository secrets are set
+(GitHub → Settings → Secrets and variables → Actions → New repository
+secret). Create the key once, on any computer with Java:
+
+```bash
+keytool -genkeypair -keystore upload-keystore.jks -storetype PKCS12 \
+  -alias upload -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AUX FM"
+base64 -w0 upload-keystore.jks > keystore.txt   # macOS: base64 -i upload-keystore.jks -o keystore.txt
+```
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | contents of `keystore.txt` |
+| `ANDROID_KEYSTORE_PASSWORD` | the password you chose |
+
+Keep `upload-keystore.jks` and its password somewhere safe, and never
+commit them (`.gitignore` already excludes `*.jks` and `key.properties`). If
+the key is lost, installs signed with it can't be updated, only replaced.
+Pull requests from forks don't get the secrets and are signed with a
+throwaway key.
 
 ## Notes / limits
 

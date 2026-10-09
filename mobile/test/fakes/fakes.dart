@@ -40,13 +40,20 @@ class FakeAmp {
   String status = 'stop';
   int vol = 30;
   bool online = true;
+  String name = 'Up2Stream Amp';
+  String uuid = 'FF31F09E-0001';
+
+  /// The amp's IP address; null answers on any address.
+  String? address;
 
   Future<String> get(Uri uri) async {
-    if (!online) throw TimeoutException('offline');
+    if (!online || (address != null && uri.host != address)) {
+      throw TimeoutException('offline');
+    }
     final cmd = Uri.decodeQueryComponent(uri.query.substring(8));
     commands.add(cmd);
     if (cmd == 'getStatusEx') {
-      return jsonEncode({'DeviceName': 'Up2Stream Amp'});
+      return jsonEncode({'DeviceName': name, 'uuid': uuid});
     }
     if (cmd == 'getPlayerStatus') {
       return jsonEncode({'status': status, 'vol': '$vol', 'mute': '0'});

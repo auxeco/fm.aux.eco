@@ -75,6 +75,7 @@ void main() {
       settings: await Settings.load(),
       ampFactory: (h) => ArylicClient(h, httpGet: amp.get),
       castDiscovery: discovery,
+      locateAmps: () async => [],
       pollInterval: const Duration(hours: 1),
     );
     await tester.pumpWidget(

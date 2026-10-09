@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../arylic/arylic_client.dart';
+import '../arylic/arylic_discovery.dart';
 import '../audio/local_player.dart';
 import '../cast/cast_client.dart';
 import '../cast/cast_discovery.dart';
@@ -15,6 +16,7 @@ import 'settings.dart';
 typedef AmpFactory = ArylicClient Function(String host);
 typedef CastSpeakerFactory = RemoteSpeaker Function(CastDevice device);
 typedef CarCheck = Future<bool> Function();
+typedef AmpLocator = Future<List<DiscoveredAmp>> Function();
 
 /// App state: current station, which speaker plays it (this phone, the
 /// Arylic amp or a Google Cast speaker), and that speaker's status.
@@ -26,12 +28,14 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     CastSpeakerFactory? castFactory,
     this._castDiscovery,
     CarCheck? isInCar,
+    AmpLocator? locateAmps,
     List<Station> stations = data.stations,
     this.pollInterval = const Duration(seconds: 3),
   }) : _settings = settings,
        _ampFactory = ampFactory ?? ArylicClient.new,
        _castFactory = castFactory ?? CastSpeaker.new,
        _isInCar = isInCar ?? _never,
+       _locateAmps = locateAmps ?? ArylicDiscovery().discover,
        stations = List.unmodifiable(stations),
        _current = stations.firstWhere(
          (s) => s.id == settings.stationId,
@@ -61,6 +65,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   final CastSpeakerFactory _castFactory;
   final CastDiscovery? _castDiscovery;
   final CarCheck _isInCar;
+  final AmpLocator _locateAmps;
   final Duration pollInterval;
   @override
   final List<Station> stations;
@@ -81,6 +86,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   StreamSubscription<List<CastDevice>>? _castSub;
   Timer? _poll;
   bool _foreground = true;
+  DateTime? _lastLocate;
 
   /// User-facing error messages (show as a snackbar).
   Stream<String> get errors => _errors.stream;
@@ -143,6 +149,8 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     _startPolling();
     await refreshRemote();
     await _startCastDiscovery();
+    // In the background: can take a few seconds if the amp moved.
+    if (_amp != null && !ampSelected) unawaited(_checkAmp());
   }
 
   Future<void> selectStation(Station station) async {
@@ -231,7 +239,8 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     _amp = amp;
     _settings
       ..ampHost = client.host
-      ..ampName = info.name;
+      ..ampName = info.name
+      ..ampUuid = info.uuid;
     if (wasSelected) _setTarget(amp);
     notifyListeners();
     if (select) {
@@ -246,7 +255,8 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     _amp = null;
     _settings
       ..ampHost = null
-      ..ampName = null;
+      ..ampName = null
+      ..ampUuid = null;
     notifyListeners();
   }
 
@@ -273,8 +283,61 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     } on Exception {
       if (!identical(target, _target)) return;
       _remoteReachable = false;
+      if (identical(target, _amp)) unawaited(_relocateAmp());
     }
     notifyListeners();
+  }
+
+  /// Makes sure the remembered amp still answers at its saved address.
+  Future<void> _checkAmp() async {
+    final amp = _amp;
+    if (amp == null) return;
+    try {
+      await amp.client.getDeviceInfo();
+    } on Exception {
+      await _relocateAmp();
+    }
+  }
+
+  /// The remembered amp stopped answering, most likely because the router
+  /// gave it a new IP address. Searches the network for the same device (by
+  /// uuid, or by name for amps saved before uuids were stored) and moves
+  /// over to its new address. At most once a minute.
+  Future<void> _relocateAmp() async {
+    final amp = _amp;
+    if (amp == null) return;
+    final now = DateTime.now();
+    final last = _lastLocate;
+    if (last != null && now.difference(last) < const Duration(minutes: 1)) {
+      return;
+    }
+    _lastLocate = now;
+    final List<DiscoveredAmp> found;
+    try {
+      found = await _locateAmps();
+    } on Object {
+      return;
+    }
+    final uuid = _settings.ampUuid;
+    final match = found
+        .where((d) => uuid != null ? d.uuid == uuid : d.name == amp.name)
+        .firstOrNull;
+    if (match == null || match.host == amp.client.host) return;
+    if (!identical(amp, _amp)) return; // replaced meanwhile
+    final moved = ArylicSpeaker(_ampFactory(match.host), amp.name);
+    final wasSelected = ampSelected;
+    _amp = moved;
+    _settings
+      ..ampHost = match.host
+      ..ampUuid = match.uuid ?? uuid;
+    _lastLocate = null;
+    if (wasSelected) {
+      _setTarget(moved);
+      notifyListeners();
+      await refreshRemote();
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<void> _remoteCommand(

@@ -1,4 +1,5 @@
 import 'package:aux_fm/arylic/arylic_client.dart';
+import 'package:aux_fm/arylic/arylic_discovery.dart';
 import 'package:aux_fm/cast/cast_discovery.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
@@ -16,6 +17,8 @@ void main() {
   late FakeCastDevice nest;
   late FakeCastDiscovery discovery;
   late bool inCar;
+  late List<DiscoveredAmp> network; // what an amp search finds
+  late int locateCalls;
   final createdCast = <CastDevice>[];
 
   const kitchen = CastDevice(
@@ -39,6 +42,10 @@ void main() {
     },
     castDiscovery: discovery,
     isInCar: () async => inCar,
+    locateAmps: () async {
+      locateCalls++;
+      return network;
+    },
     pollInterval: const Duration(hours: 1),
   );
 
@@ -56,6 +63,8 @@ void main() {
     await nest.start();
     discovery = FakeCastDiscovery();
     inCar = false;
+    network = [];
+    locateCalls = 0;
     createdCast.clear();
   });
 
@@ -131,6 +140,94 @@ void main() {
       expect(again.ampSelected, isTrue);
       expect(again.ampName, 'Up2Stream Amp');
       expect(again.remoteReachable, isTrue);
+    });
+
+    test('finds the remembered amp again after an IP change', () async {
+      final c = await make();
+      amp.address = '192.168.1.20';
+      await c.connectAmp('192.168.1.20');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('ampUuid'), 'FF31F09E-0001');
+
+      // Overnight the router hands the amp a new address.
+      amp.address = '192.168.1.57';
+      network = [
+        const DiscoveredAmp(
+          host: '192.168.1.57',
+          name: 'Up2Stream Amp',
+          uuid: 'FF31F09E-0001',
+        ),
+      ];
+      final again = build(Settings(prefs));
+      await again.init();
+      await pumpEventQueue();
+
+      expect(locateCalls, 1);
+      expect(again.ampHost, '192.168.1.57');
+      expect(again.ampSelected, isTrue);
+      expect(again.remoteReachable, isTrue);
+      expect(prefs.getString('ampHost'), '192.168.1.57');
+      await again.play();
+      expect(amp.actions.last, startsWith('setPlayerCmd:play:'));
+    });
+
+    test('also when the amp is remembered but not selected', () async {
+      final c = await make();
+      amp.address = '192.168.1.20';
+      await c.connectAmp('192.168.1.20');
+      await c.selectPhone();
+      amp.address = '192.168.1.57';
+      network = [
+        const DiscoveredAmp(
+          host: '192.168.1.57',
+          name: 'Up2Stream Amp',
+          uuid: 'FF31F09E-0001',
+        ),
+      ];
+      final again = build(Settings(await SharedPreferences.getInstance()));
+      await again.init();
+      await pumpEventQueue();
+      expect(again.ampHost, '192.168.1.57');
+      expect(again.isRemote, isFalse);
+    });
+
+    test('does not switch to a different amp with the same name', () async {
+      final c = await make();
+      amp.address = '192.168.1.20';
+      await c.connectAmp('192.168.1.20');
+      amp.address = '192.168.1.57';
+      network = [
+        const DiscoveredAmp(
+          host: '192.168.1.99',
+          name: 'Up2Stream Amp',
+          uuid: 'SOMEONE-ELSES',
+        ),
+      ];
+      final again = build(Settings(await SharedPreferences.getInstance()));
+      await again.init();
+      await pumpEventQueue();
+      expect(again.ampHost, '192.168.1.20');
+      expect(again.remoteReachable, isFalse);
+    });
+
+    test('an amp saved without uuid is found again by name', () async {
+      amp.address = '192.168.1.57';
+      network = [
+        const DiscoveredAmp(
+          host: '192.168.1.57',
+          name: 'Up2Stream Amp',
+          uuid: 'FF31F09E-0001',
+        ),
+      ];
+      final c = await make({
+        'ampHost': '192.168.1.20',
+        'ampName': 'Up2Stream Amp',
+        'output': 'amp',
+      });
+      await pumpEventQueue();
+      expect(c.ampHost, '192.168.1.57');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('ampUuid'), 'FF31F09E-0001');
     });
 
     test('volume is sent to the amp', () async {

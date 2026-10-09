@@ -5,9 +5,10 @@ import 'dart:io';
 import 'arylic_client.dart';
 
 class DiscoveredAmp {
-  const DiscoveredAmp({required this.host, required this.name});
+  const DiscoveredAmp({required this.host, required this.name, this.uuid});
   final String host;
   final String name;
+  final String? uuid;
 }
 
 /// Finds Arylic / LinkPlay devices on the local network.
@@ -65,7 +66,7 @@ class ArylicDiscovery {
         host,
         timeout: const Duration(seconds: 2),
       ).getDeviceInfo();
-      return DiscoveredAmp(host: host, name: info.name);
+      return DiscoveredAmp(host: host, name: info.name, uuid: info.uuid);
     } on Exception {
       return null;
     }
