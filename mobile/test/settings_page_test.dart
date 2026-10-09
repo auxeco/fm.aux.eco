@@ -1,6 +1,7 @@
 import 'package:aux_fm/audio/stream_probe.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
+import 'package:aux_fm/data/more_stations.dart';
 import 'package:aux_fm/main.dart';
 import 'package:aux_fm/models/station.dart';
 import 'package:aux_fm/ui/settings_page.dart';
@@ -34,7 +35,9 @@ void main() {
     c = RadioController(
       player: FakePlayer(),
       settings: await Settings.load(),
-      moreStations: const [extra],
+      catalog: const [
+        StationGroup('MORE STATIONS', [extra]),
+      ],
       locateAmps: () async => [],
       pollInterval: const Duration(hours: 1),
     );

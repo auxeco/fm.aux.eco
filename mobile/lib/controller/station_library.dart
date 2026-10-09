@@ -12,12 +12,16 @@ class StationLibrary {
   StationLibrary(
     this._settings, {
     this.selection = data.stations,
-    this.more = data.moreStations,
+    this.catalog = data.stationCatalog,
   });
 
   final Settings _settings;
   final List<Station> selection;
-  final List<Station> more;
+
+  /// Extra stations, in titled groups.
+  final List<data.StationGroup> catalog;
+
+  List<Station> get more => [for (final g in catalog) ...g.stations];
 
   List<Station> get custom => _settings.customStations;
 
@@ -26,9 +30,11 @@ class StationLibrary {
   /// The station list shown in the app, in this order.
   List<Station> get enabled => all.where(isEnabled).toList();
 
-  bool isEnabled(Station s) => more.any((m) => m.id == s.id)
+  bool isEnabled(Station s) => _isExtra(s)
       ? _settings.addedStations.contains(s.id)
       : !_settings.hiddenStations.contains(s.id);
+
+  bool _isExtra(Station s) => more.any((m) => m.id == s.id);
 
   Station? byId(String? id) {
     for (final s in all) {
@@ -42,7 +48,7 @@ class StationLibrary {
   bool setEnabled(Station s, bool on) {
     if (isEnabled(s) == on) return true;
     if (!on && enabled.length <= 1) return false;
-    if (more.any((m) => m.id == s.id)) {
+    if (_isExtra(s)) {
       final added = _settings.addedStations;
       on ? added.add(s.id) : added.remove(s.id);
       _settings.addedStations = added;

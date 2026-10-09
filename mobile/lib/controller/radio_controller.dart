@@ -32,7 +32,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     CarCheck? isInCar,
     AmpLocator? locateAmps,
     List<Station> stations = data.stations,
-    List<Station> moreStations = data.moreStations,
+    List<data.StationGroup> catalog = data.stationCatalog,
     this.pollInterval = const Duration(seconds: 3),
   }) : _settings = settings,
        _ampFactory = ampFactory ?? ArylicClient.new,
@@ -42,7 +42,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
        library = StationLibrary(
          settings,
          selection: stations,
-         more: moreStations,
+         catalog: catalog,
        ),
        _darkTheme = settings.darkTheme {
     _current = library.byId(settings.stationId) ?? library.enabled.first;

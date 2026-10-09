@@ -65,10 +65,10 @@ class SettingsPage extends StatelessWidget {
                         stations: library.selection,
                         controller: controller,
                       ),
-                      if (library.more.isNotEmpty)
+                      for (final group in library.catalog)
                         _Group(
-                          title: 'MORE STATIONS',
-                          stations: library.more,
+                          title: group.title,
+                          stations: group.stations,
                           controller: controller,
                         ),
                       _Group(

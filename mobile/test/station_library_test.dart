@@ -1,5 +1,6 @@
 import 'package:aux_fm/controller/settings.dart';
 import 'package:aux_fm/controller/station_library.dart';
+import 'package:aux_fm/data/more_stations.dart';
 import 'package:aux_fm/models/station.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 const a = Station(id: 'a', name: 'A', url: 'https://a/s', description: '');
 const b = Station(id: 'b', name: 'B', url: 'https://b/s', description: '');
 const x = Station(id: 'x', name: 'X', url: 'https://x/s', description: '');
+const catalog = [
+  StationGroup('MORE', [x]),
+];
 
 void main() {
   late StationLibrary lib;
@@ -15,7 +19,7 @@ void main() {
   Future<StationLibrary> make([Map<String, Object> prefs = const {}]) async {
     SharedPreferences.setMockInitialValues(prefs);
     settings = await Settings.load();
-    return StationLibrary(settings, selection: const [a, b], more: const [x]);
+    return StationLibrary(settings, selection: const [a, b], catalog: catalog);
   }
 
   setUp(() async => lib = await make());
@@ -35,7 +39,7 @@ void main() {
     final reloaded = StationLibrary(
       Settings(await SharedPreferences.getInstance()),
       selection: const [a, b],
-      more: const [x],
+      catalog: catalog,
     );
     expect(ids(reloaded.enabled), ['b', 'x']);
   });
@@ -56,7 +60,7 @@ void main() {
     final reloaded = StationLibrary(
       Settings(await SharedPreferences.getInstance()),
       selection: const [a, b],
-      more: const [x],
+      catalog: catalog,
     );
     expect(reloaded.custom.single.name, 'My Radio');
 

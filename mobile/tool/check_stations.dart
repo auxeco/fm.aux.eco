@@ -34,7 +34,7 @@ Future<void> main(List<String> args) async {
   var failed = 0;
   for (final (group, list) in [
     ('AUX FM selection', stations),
-    ('More stations', moreStations),
+    for (final g in stationCatalog) (g.title, g.stations),
   ]) {
     stdout.writeln('\n== $group ==');
     for (final s in list) {

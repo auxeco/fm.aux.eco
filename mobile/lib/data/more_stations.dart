@@ -1,7 +1,20 @@
 import '../models/station.dart';
 
-/// Extra stations users can add to their list in Settings. Every URL is
-/// checked by tool/check_stations.dart in CI (Station streams workflow).
+/// A titled group of extra stations in Settings.
+class StationGroup {
+  const StationGroup(this.title, this.stations);
+  final String title;
+  final List<Station> stations;
+}
+
+/// Extra stations users can add to their list in Settings, by group. Every
+/// URL is checked by tool/check_stations.dart in CI (Station streams
+/// workflow).
+const List<StationGroup> stationCatalog = [
+  StationGroup('MORE STATIONS', moreStations),
+  StationGroup('NTS INFINITE MIXTAPES', ntsMixtapes),
+];
+
 const List<Station> moreStations = [
   // Independent and community radio, like the AUX FM selection.
   Station(
@@ -89,6 +102,12 @@ const List<Station> moreStations = [
     name: 'Oroko Radio',
     url: 'https://oroko-radio.radiocult.fm/stream',
     description: 'Independent radio from Accra, Ghana.',
+  ),
+  Station(
+    id: 'alhara',
+    name: 'Radio Alhara',
+    url: 'https://n10.radiojar.com/78cxy6wkxtzuv',
+    description: 'Community radio started in Bethlehem, Palestine.',
   ),
   Station(
     id: 'rinse-france',
@@ -229,5 +248,105 @@ const List<Station> moreStations = [
     name: 'SomaFM Drone Zone',
     url: 'https://ice2.somafm.com/dronezone-128-mp3',
     description: 'Atmospheric ambient textures from SomaFM.',
+  ),
+];
+
+/// NTS's themed 24/7 streams, with NTS's own descriptions.
+const List<Station> ntsMixtapes = [
+  Station(
+    id: 'nts-poolside',
+    name: 'NTS Poolside',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape4',
+    description: 'Balearic, boogie, and sophisti-pop for poolsides, beaches and car stereos.',
+  ),
+  Station(
+    id: 'nts-slow-focus',
+    name: 'NTS Slow Focus',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape',
+    description: 'Meditative, relaxing and beatless: ambient, drone and ragas.',
+  ),
+  Station(
+    id: 'nts-low-key',
+    name: 'NTS Low Key',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape2',
+    description: "Keeping it simple with lo-fi hip-hop and smooth R'n'B.",
+  ),
+  Station(
+    id: 'nts-memory-lane',
+    name: 'NTS Memory Lane',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape6',
+    description: 'Turn on, tune in, drop out.',
+  ),
+  Station(
+    id: 'nts-4-to-the-floor',
+    name: 'NTS 4 To The Floor',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape5',
+    description: 'House and techno from past to present.',
+  ),
+  Station(
+    id: 'nts-island-time',
+    name: 'NTS Island Time',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape21',
+    description: 'Easy skanking - reggae, dub, and plenty more.',
+  ),
+  Station(
+    id: 'nts-the-tube',
+    name: 'NTS The Tube',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape26',
+    description: 'Oddball post-punk, industrial provocation, and minimal wave.',
+  ),
+  Station(
+    id: 'nts-sheet-music',
+    name: 'NTS Sheet Music',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape35',
+    description: 'The best of classical and contemporary composition.',
+  ),
+  Station(
+    id: 'nts-feelings',
+    name: 'NTS Feelings',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape27',
+    description: 'Sweet soul, gospel, boogie, and beyond.',
+  ),
+  Station(
+    id: 'nts-expansions',
+    name: 'NTS Expansions',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape3',
+    description: 'Jazz and its many mind-expanding variations.',
+  ),
+  Station(
+    id: 'nts-rap-house',
+    name: 'NTS Rap House',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape22',
+    description: '808s and champagne.',
+  ),
+  Station(
+    id: 'nts-labyrinth',
+    name: 'NTS Labyrinth',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape31',
+    description: 'Enter the void.',
+  ),
+  Station(
+    id: 'nts-sweat',
+    name: 'NTS Sweat',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape24',
+    description: 'A new wave of international party music.',
+  ),
+  Station(
+    id: 'nts-otaku',
+    name: 'NTS Otaku',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape36',
+    description: 'Video game and anime soundtracks, for fanboys and fangirls.',
+  ),
+  Station(
+    id: 'nts-the-pit',
+    name: 'NTS The Pit',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape34',
+    description: 'Behold the songs of the ancient metal bards.',
+  ),
+  Station(
+    id: 'nts-field-recordings',
+    name: 'NTS Field Recordings',
+    url: 'https://stream-mixtape-geo.ntslive.net/mixtape23',
+    description: 'Natural ambience from NTS listeners around the world.',
   ),
 ];

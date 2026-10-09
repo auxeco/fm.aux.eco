@@ -1,13 +1,11 @@
-# Temporary: stations being evaluated (round 2).
-? Worldwide FM
-? Seoul Community Radio
-? Rinse FM
-? NTS
-Rinse UK proxy | https://admin.stream.rinse.fm/proxy/rinse_uk/stream
-Rinse UK 2 | https://streamer.rinse.fm/rinse_uk
-Worldwide FM a | https://worldwidefm.out.airtime.pro/worldwidefm_a
-Worldwide radio.co | https://streaming.radio.co/s1a27d9b28/listen
-SCR airtime | https://scr.out.airtime.pro/scr_a
-Radio Alhara | https://n02.radiojar.com/78cxy6wkxtzuv
-Radio Alhara https | https://n10.radiojar.com/78cxy6wkxtzuv
-Intergalactic FM https | https://radio.intergalactic.fm/1
+# Temporary: stations being evaluated (round 3: Seoul Community Radio).
+? SCR
+? Seoul Community
+SCR radiocult | https://seoul-community-radio.radiocult.fm/stream
+SCR radiocult 2 | https://seoulcommunityradio.radiocult.fm/stream
+SCR radiocult 3 | https://scr.radiocult.fm/stream
+SCR airtime | https://seoulcommunityradio.out.airtime.pro/seoulcommunityradio_a
+SCR azuracast | https://radio.seoulcommunityradio.com/radio/8000/radio.mp3
+SCR azuracast 2 | https://stream.seoulcommunityradio.com/radio/8000/radio.mp3
+SCR old IP https | https://188.166.198.223/radio/8000/radio.mp3
+SCR old IP listen | http://188.166.198.223/listen/scr/radio.mp3

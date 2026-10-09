@@ -30,7 +30,5 @@ jobs:
       - name: Candidates
         if: hashFiles('mobile/tool/candidates.txt') != ''
         run: dart run tool/check_stations.dart --candidates tool/candidates.txt
-      - name: NTS mixtapes (temporary)
-        run: curl -sS https://www.nts.live/api/v2/mixtapes | jq -r '.results[] | "\(.mixtape_alias) | \(.title) | \(.audio_stream_endpoint) | \(.subtitle)"'
       - name: App stations
         run: dart run tool/check_stations.dart

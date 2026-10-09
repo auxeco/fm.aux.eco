@@ -82,7 +82,7 @@ const stations = [
     name: "Worldwide FM",
     id: "worldwidefm",
     hashtag: "worldwide",
-    url: "https://worldwidefm.out.airtime.pro/worldwidefm_b",
+    url: "https://worldwide-fm.radiocult.fm/stream",
     img: "./station-logos/worldwide.png",
     link: "https://worldwidefm.net/",
     description: "An award winning radio station with a global audience.",
@@ -101,7 +101,7 @@ const stations = [
     name: "Rinse FM",
     id: "rinse",
     hashtag: "rinse",
-    url: "https://streamer-uk.rinse.fm:8443/stream",
+    url: "https://admin.stream.rinse.fm/proxy/rinse_uk/stream",
     img: "",
     link: "https://www.rinse.fm/",
     description:
