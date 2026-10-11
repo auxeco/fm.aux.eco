@@ -4,11 +4,13 @@ import 'package:aux_fm/cast/cast_discovery.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
 import 'package:aux_fm/data/stations.dart';
+import 'package:aux_fm/sonos/sonos_discovery.dart';
 import 'package:aux_fm/speakers/remote_speaker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes/fake_cast_device.dart';
+import 'fakes/fake_sonos.dart';
 import 'fakes/fakes.dart';
 
 void main() {
@@ -20,6 +22,8 @@ void main() {
   late List<DiscoveredAmp> network; // what an amp search finds
   late int locateCalls;
   final createdCast = <CastDevice>[];
+  late FakeSonos sonos;
+  late List<SonosRoom> sonosNetwork; // what a Sonos search finds
 
   const kitchen = CastDevice(
     id: 'nest-1',
@@ -41,6 +45,7 @@ void main() {
       );
     },
     castDiscovery: discovery,
+    locateSonos: () async => sonosNetwork,
     isInCar: () async => inCar,
     locateAmps: () async {
       locateCalls++;
@@ -66,9 +71,23 @@ void main() {
     network = [];
     locateCalls = 0;
     createdCast.clear();
+    sonos = FakeSonos();
+    await sonos.start();
+    sonosNetwork = [];
   });
 
-  tearDown(() => nest.close());
+  tearDown(() async {
+    await nest.close();
+    await sonos.close();
+  });
+
+  SonosRoom livingRoom({String? host, int? port}) => SonosRoom(
+    id: 'RINCON_A',
+    name: 'Living Room',
+    host: host ?? sonos.host,
+    port: port ?? sonos.port,
+    otherRooms: const ['Kitchen'],
+  );
 
   group('phone', () {
     test('plays stations on the phone by default', () async {
@@ -370,6 +389,62 @@ void main() {
       expect(player.stops, 1);
       expect(c.current.id, stations.first.id);
       expect(c.stations.any((s) => s.id == mine.id), isFalse);
+    });
+  });
+
+  group('Sonos', () {
+    test('lists rooms found on the network', () async {
+      sonosNetwork = [livingRoom()];
+      final c = await make();
+      await pumpEventQueue();
+      expect(c.sonosRooms.single.label, 'Living Room + Kitchen');
+      expect(c.sonosSearching, isFalse);
+    });
+
+    test('selecting a room moves playback to it', () async {
+      final c = await make();
+      await c.selectStation(stations[1]); // on the phone
+      await c.selectSonos(livingRoom());
+
+      expect(player.stops, 1);
+      expect(c.targetName, 'Living Room + Kitchen');
+      expect(c.isSonosSelected(livingRoom()), isTrue);
+      expect(sonos.uri, startsWith('x-rincon-mp3radio://'));
+      expect(sonos.metadata, contains(stations[1].name));
+      expect(c.isPlaying, isTrue);
+
+      sonos.streamContent = 'Artist - Track';
+      await c.refreshRemote();
+      expect(c.nowPlaying, 'Artist - Track');
+
+      await c.setRemoteVolume(40);
+      expect(sonos.volume, 40);
+      await c.togglePlay();
+      expect(sonos.state, 'STOPPED');
+    });
+
+    test('is remembered across launches', () async {
+      final c = await make();
+      await c.selectSonos(livingRoom());
+      final again = build(Settings(await SharedPreferences.getInstance()));
+      await again.init();
+      expect(again.targetName, 'Living Room + Kitchen');
+      expect(again.remoteReachable, isTrue);
+    });
+
+    test('follows the room to a new IP address', () async {
+      final c = await make();
+      await c.selectSonos(livingRoom(host: '127.0.0.1', port: 1));
+      await c.refreshRemote();
+      expect(c.remoteReachable, isFalse);
+
+      // A search finds the same room at its new address.
+      sonosNetwork = [livingRoom()];
+      await c.refreshSonos();
+      await pumpEventQueue();
+      expect(c.remoteReachable, isTrue);
+      await c.play();
+      expect(sonos.state, 'PLAYING');
     });
   });
 

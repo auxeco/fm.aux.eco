@@ -10,6 +10,7 @@ and controls it from the app:
 - an [Arylic](https://www.arylic.com/) streaming amp (Up2Stream Amp,
   Up2Stream Pro, A50 and other LinkPlay-based devices)
 - Google Nest / Home speakers, Chromecasts and speaker groups (Google Cast)
+- Sonos speakers and groups
 
 It also works as a regular Android media app: lock screen and headset
 controls, "Hey Google, play NTS on AUX FM", and Android Auto.
@@ -53,6 +54,7 @@ key: uninstall the old version first, which also clears those settings.
 | Amp discovery | SSDP (UPnP) search, then each responder is confirmed with `getStatusEx` |
 | Google Cast | Cast v2 protocol in Dart (`lib/cast/`): TLS + protobuf framing, Google's Default Media Receiver. No Play services needed |
 | Cast discovery | mDNS `_googlecast._tcp` via [`bonsoir`](https://pub.dev/packages/bonsoir) (NsdManager / Bonjour) |
+| Sonos | UPnP/SOAP on port 1400 (`lib/sonos/`), as used by SoCo and Home Assistant: SSDP search, rooms and groups from ZoneGroupTopology, radio via `x-rincon-mp3radio:` |
 | Voice, Android Auto | `audio_service` media browser: station list, play-from-search, play-from-id |
 | Car detection | local plugin `packages/car_connection` (AndroidX `CarConnection`) |
 | Settings | `shared_preferences` (last station, amp IP, output, theme) |
@@ -68,6 +70,8 @@ lib/
   arylic/arylic_client.dart    Arylic HTTP API client
   arylic/arylic_discovery.dart find amps on the LAN
   cast/                        Google Cast client + mDNS discovery
+  sonos/                       Sonos client, room discovery, speaker
+  net/ssdp.dart                SSDP search (Arylic and Sonos discovery)
   speakers/remote_speaker.dart one interface over Arylic and Cast speakers
   voice/station_search.dart    matches "NTS two", "dub lab", ... to stations
   controller/radio_controller.dart  app state; routes playback to a speaker
@@ -120,6 +124,14 @@ device info). The amp is remembered.
 **Google Nest / Chromecast:** these show up in the list automatically when
 the phone is on the same Wi-Fi. Speaker groups from the Google Home app show
 up too.
+
+**Sonos:** each room, or group of rooms made in the Sonos app, shows up as
+one speaker ("Living Room + Kitchen") when the speaker list opens. Volume
+is the group's volume, and the live track title comes from the speaker. If
+rooms are regrouped later, commands follow the group's new coordinator.
+This uses the speakers' local UPnP interface, which works on S1 and S2
+systems but isn't Sonos's official API; Sonos has said it will move to a
+newer local API over time.
 
 Under the hood these are plain HTTP calls, so you can test your amp from a
 laptop:
@@ -175,7 +187,8 @@ run's artifacts to sideload it.
 - **iOS:** set your team and bundle ID in Xcode (`ios/Runner.xcworkspace`).
   Network search for the amp needs Apple's multicast entitlement
   (`com.apple.developer.networking.multicast`, requested from Apple). Until
-  then, connect by IP address on iOS. Google Cast discovery uses Bonjour and
+  then, connect by IP address on iOS; Sonos rooms aren't found on iOS
+  without it. Google Cast discovery uses Bonjour and
   works without it. Car detection is Android-only so far (CarPlay would need
   its own work).
 

@@ -6,6 +6,7 @@ import 'audio/radio_audio_handler.dart';
 import 'cast/cast_discovery.dart';
 import 'controller/radio_controller.dart';
 import 'controller/settings.dart';
+import 'sonos/sonos_discovery.dart';
 import 'ui/home_page.dart';
 import 'ui/theme.dart';
 
@@ -24,6 +25,7 @@ Future<void> main() async {
     player: player,
     settings: await Settings.load(),
     castDiscovery: BonsoirCastDiscovery(),
+    locateSonos: SonosDiscovery().discover,
     isInCar: CarConnection.isConnected,
   );
   runApp(AuxFmApp(controller: controller));

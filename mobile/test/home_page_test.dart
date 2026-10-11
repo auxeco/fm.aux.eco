@@ -3,6 +3,7 @@ import 'package:aux_fm/cast/cast_discovery.dart';
 import 'package:aux_fm/controller/radio_controller.dart';
 import 'package:aux_fm/controller/settings.dart';
 import 'package:aux_fm/main.dart';
+import 'package:aux_fm/sonos/sonos_discovery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +28,14 @@ void main() {
       settings: await Settings.load(),
       ampFactory: (h) => ArylicClient(h, httpGet: amp.get),
       castDiscovery: discovery,
+      locateSonos: () async => const [
+        SonosRoom(
+          id: 'RINCON_A',
+          name: 'Living Room',
+          host: '10.0.0.5',
+          otherRooms: ['Kitchen'],
+        ),
+      ],
       locateAmps: () async => [],
       pollInterval: const Duration(hours: 1),
     );
@@ -68,6 +77,8 @@ void main() {
     expect(find.text('Up2Stream Amp'), findsOneWidget);
     expect(find.text('Kitchen speaker'), findsOneWidget);
     expect(find.text('Google Cast · Google Nest Mini'), findsOneWidget);
+    expect(find.text('Living Room + Kitchen'), findsOneWidget);
+    expect(find.text('Sonos'), findsOneWidget);
     expect(find.text('ARYLIC AMP SETTINGS'), findsOneWidget);
     await screenshot(tester, 'speakers');
 

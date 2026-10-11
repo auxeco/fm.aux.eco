@@ -41,6 +41,7 @@ dependencies:
   bonsoir: ^7.1.5
   car_connection:
     path: packages/car_connection
+  xml: ^7.1.0
 
 dev_dependencies:
   flutter_test:

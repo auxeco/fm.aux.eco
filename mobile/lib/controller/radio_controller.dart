@@ -10,6 +10,8 @@ import '../cast/cast_discovery.dart';
 import '../data/more_stations.dart' as data;
 import '../data/stations.dart' as data;
 import '../models/station.dart';
+import '../sonos/sonos_discovery.dart';
+import '../sonos/sonos_speaker.dart';
 import '../speakers/remote_speaker.dart';
 import '../voice/station_search.dart';
 import 'settings.dart';
@@ -17,6 +19,8 @@ import 'station_library.dart';
 
 typedef AmpFactory = ArylicClient Function(String host);
 typedef CastSpeakerFactory = RemoteSpeaker Function(CastDevice device);
+typedef SonosSpeakerFactory = RemoteSpeaker Function(SonosRoom room);
+typedef SonosLocator = Future<List<SonosRoom>> Function();
 typedef CarCheck = Future<bool> Function();
 typedef AmpLocator = Future<List<DiscoveredAmp>> Function();
 
@@ -29,6 +33,8 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     AmpFactory? ampFactory,
     CastSpeakerFactory? castFactory,
     this._castDiscovery,
+    SonosSpeakerFactory? sonosFactory,
+    this._locateSonos,
     CarCheck? isInCar,
     AmpLocator? locateAmps,
     List<Station> stations = data.stations,
@@ -37,6 +43,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   }) : _settings = settings,
        _ampFactory = ampFactory ?? ArylicClient.new,
        _castFactory = castFactory ?? CastSpeaker.new,
+       _sonosFactory = sonosFactory ?? SonosSpeaker.new,
        _isInCar = isInCar ?? _never,
        _locateAmps = locateAmps ?? ArylicDiscovery().discover,
        library = StationLibrary(
@@ -68,6 +75,10 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   final AmpFactory _ampFactory;
   final CastSpeakerFactory _castFactory;
   final CastDiscovery? _castDiscovery;
+  final SonosSpeakerFactory _sonosFactory;
+
+  /// Searches the network for Sonos rooms; null disables Sonos.
+  final SonosLocator? _locateSonos;
   final CarCheck _isInCar;
   final AmpLocator _locateAmps;
   final Duration pollInterval;
@@ -92,6 +103,10 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   bool _remoteReachable = true;
   bool _remoteBusy = false;
   List<CastDevice> _castDevices = const [];
+  List<SonosRoom> _sonosRooms = const [];
+  bool _sonosSearching = false;
+  Future<void>? _sonosSearch;
+  DateTime? _lastSonosRetry;
   StreamSubscription<List<CastDevice>>? _castSub;
   Timer? _poll;
   bool _foreground = true;
@@ -119,6 +134,11 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
   /// Google Cast speakers currently visible on the network.
   List<CastDevice> get castDevices => _castDevices;
   bool isCastSelected(CastDevice d) => _target?.id == 'cast:${d.id}';
+
+  /// Sonos rooms and groups found on the network.
+  List<SonosRoom> get sonosRooms => _sonosRooms;
+  bool get sonosSearching => _sonosSearching;
+  bool isSonosSelected(SonosRoom r) => _target?.id == 'sonos:${r.id}';
 
   bool get isPlaying => isRemote
       ? (_remoteStatus?.playing ?? false)
@@ -151,6 +171,9 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
       case OutputKind.cast:
         final device = _settings.castDevice;
         if (device != null) _target = _castFactory(device);
+      case OutputKind.sonos:
+        final room = _settings.sonosRoom;
+        if (room != null) _target = _sonosFactory(room);
       default:
         break;
     }
@@ -158,6 +181,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     _startPolling();
     await refreshRemote();
     await _startCastDiscovery();
+    unawaited(refreshSonos());
     // In the background: can take a few seconds if the amp moved.
     if (_amp != null && !ampSelected) unawaited(_checkAmp());
   }
@@ -240,6 +264,11 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     await _switchTo(_castFactory(device));
   }
 
+  Future<void> selectSonos(SonosRoom room) async {
+    if (isSonosSelected(room)) return;
+    await _switchTo(_sonosFactory(room));
+  }
+
   /// Moves playback to [next]; whatever was playing continues there.
   Future<void> _switchTo(RemoteSpeaker? next) async {
     if (next?.id == _target?.id) return;
@@ -263,8 +292,10 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
       null => OutputKind.phone,
       SpeakerKind.arylic => OutputKind.amp,
       SpeakerKind.cast => OutputKind.cast,
+      SpeakerKind.sonos => OutputKind.sonos,
     };
     if (next is CastSpeaker) _settings.castDevice = next.device;
+    if (next is SonosSpeaker) _settings.sonosRoom = next.room;
     _startPolling();
   }
 
@@ -323,6 +354,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
       if (!identical(target, _target)) return;
       _remoteReachable = false;
       if (identical(target, _amp)) unawaited(_relocateAmp());
+      if (target.kind == SpeakerKind.sonos) unawaited(_retrySonosSearch());
     }
     notifyListeners();
   }
@@ -434,6 +466,54 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
     notifyListeners();
   }
 
+  // ---- Sonos ----
+
+  /// Searches the network for Sonos rooms (a few seconds). Joins a
+  /// search that is already running.
+  Future<void> refreshSonos() =>
+      _sonosSearch ??= _searchSonos().whenComplete(() => _sonosSearch = null);
+
+  Future<void> _searchSonos() async {
+    final locate = _locateSonos;
+    if (locate == null) return;
+    _sonosSearching = true;
+    notifyListeners();
+    try {
+      _sonosRooms = await locate();
+    } on Object {
+      // Keep what we had; Sonos is optional.
+    } finally {
+      _sonosSearching = false;
+    }
+    // Follow the selected room to a new address or group name.
+    final target = _target;
+    if (target is SonosSpeaker) {
+      for (final r in _sonosRooms) {
+        if (r.id == target.room.id &&
+            (r.host != target.room.host ||
+                r.port != target.room.port ||
+                r.label != target.room.label)) {
+          _setTarget(_sonosFactory(r));
+          unawaited(refreshRemote());
+          break;
+        }
+      }
+    }
+    notifyListeners();
+  }
+
+  /// The selected Sonos room stopped answering; maybe it has a new IP
+  /// address. At most once a minute.
+  Future<void> _retrySonosSearch() async {
+    final now = DateTime.now();
+    final last = _lastSonosRetry;
+    if (last != null && now.difference(last) < const Duration(minutes: 1)) {
+      return;
+    }
+    _lastSonosRetry = now;
+    await refreshSonos();
+  }
+
   // ---- Media session (voice, Android Auto, notification) ----
 
   @override
@@ -485,6 +565,7 @@ class RadioController extends ChangeNotifier implements MediaSessionDelegate {
       _startPolling();
       unawaited(refreshRemote());
       unawaited(_startCastDiscovery());
+      unawaited(refreshSonos());
     } else {
       _poll?.cancel();
       unawaited(_castDiscovery?.stop());

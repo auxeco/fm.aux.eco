@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 
 import '../arylic/arylic_discovery.dart';
 import '../cast/cast_discovery.dart';
+import '../sonos/sonos_discovery.dart';
 import '../controller/radio_controller.dart';
 import 'theme.dart';
 
 Future<void> showSpeakerSheet(
   BuildContext context,
   RadioController controller,
-) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
-  builder: (_) => SpeakerSheet(controller: controller),
-);
+) {
+  // Sonos rooms are found by a one-off network search; refresh it now.
+  controller.refreshSonos();
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => SpeakerSheet(controller: controller),
+  );
+}
 
-/// Choose where the radio plays: this phone, the Arylic amp or a Google
-/// Cast speaker. Also sets up the Arylic amp.
+/// Choose where the radio plays: this phone, the Arylic amp, a Google Cast
+/// speaker or a Sonos room. Also sets up the Arylic amp.
 class SpeakerSheet extends StatelessWidget {
   const SpeakerSheet({super.key, required this.controller, this.discovery});
   final RadioController controller;
@@ -75,12 +80,28 @@ class SpeakerSheet extends StatelessWidget {
                     selected: c.isCastSelected(d),
                     onTap: () => choose(() => c.selectCast(d)),
                   ),
-                if (c.castDevices.isEmpty)
+                for (final SonosRoom r in c.sonosRooms)
+                  _SpeakerTile(
+                    icon: Icons.speaker_group,
+                    title: r.label,
+                    subtitle: 'Sonos',
+                    selected: c.isSonosSelected(r),
+                    onTap: () => choose(() => c.selectSonos(r)),
+                  ),
+                if (c.sonosSearching)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'Google Nest speakers and Chromecasts on this Wi-Fi '
-                      'appear here.',
+                      'Looking for Sonos speakers…',
+                      style: TextStyle(fontSize: 12, color: colors.decorative),
+                    ),
+                  )
+                else if (c.castDevices.isEmpty && c.sonosRooms.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Google Nest speakers, Chromecasts and Sonos speakers '
+                      'on this Wi-Fi appear here.',
                       style: TextStyle(fontSize: 12, color: colors.decorative),
                     ),
                   ),

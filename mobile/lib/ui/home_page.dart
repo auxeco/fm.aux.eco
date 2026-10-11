@@ -313,6 +313,7 @@ class _OutputBar extends StatelessWidget {
           null => Icons.smartphone,
           SpeakerKind.arylic => Icons.speaker,
           SpeakerKind.cast => Icons.cast_connected,
+          SpeakerKind.sonos => Icons.speaker_group,
         };
         return Container(
           decoration: BoxDecoration(border: Border(bottom: _border(context))),

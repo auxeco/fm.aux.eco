@@ -4,9 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cast/cast_discovery.dart';
 import '../models/station.dart';
+import '../sonos/sonos_discovery.dart';
 
 /// Where playback goes.
-enum OutputKind { phone, amp, cast }
+enum OutputKind { phone, amp, cast, sonos }
 
 /// Persisted user choices.
 class Settings {
@@ -56,6 +57,37 @@ class Settings {
     _set('castHost', d?.host);
     d == null ? _prefs.remove('castPort') : _prefs.setInt('castPort', d.port);
   }
+
+  /// The last Sonos room played on.
+  SonosRoom? get sonosRoom {
+    final raw = _prefs.getString('sonosRoom');
+    if (raw == null) return null;
+    try {
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      return SonosRoom(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        host: j['host'] as String,
+        port: j['port'] as int? ?? 1400,
+        otherRooms: [...?(j['otherRooms'] as List?)?.cast<String>()],
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  set sonosRoom(SonosRoom? r) => r == null
+      ? _prefs.remove('sonosRoom')
+      : _prefs.setString(
+          'sonosRoom',
+          jsonEncode({
+            'id': r.id,
+            'name': r.name,
+            'host': r.host,
+            'port': r.port,
+            'otherRooms': r.otherRooms,
+          }),
+        );
 
   /// Built-in or custom stations the user removed from their list.
   Set<String> get hiddenStations =>

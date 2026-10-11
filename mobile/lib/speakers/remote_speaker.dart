@@ -3,7 +3,7 @@ import '../cast/cast_client.dart';
 import '../cast/cast_discovery.dart';
 import '../models/station.dart';
 
-enum SpeakerKind { arylic, cast }
+enum SpeakerKind { arylic, cast, sonos }
 
 class SpeakerStatus {
   const SpeakerStatus({
